@@ -58,9 +58,11 @@
 
     bootEl.hidden = true;
     shellEl.hidden = false;
+    if (window.Keybar && window.Keybar.init) window.Keybar.init();
     if (window.Router && window.Router.start) window.Router.start();
     if (window.Terminal && window.Terminal.init) window.Terminal.init();
     startClock();
+    startIdentity();
   }
 
   function onSkip(e) {
@@ -123,9 +125,38 @@
     setInterval(tick, 1000);
   }
 
+  /* The one element on the site that is about the reader. It does nothing
+     but change what the archive calls you — which is the whole point. */
+  function startIdentity() {
+    var KEY = "rubicon.registered";
+    var line = document.getElementById("identity-line");
+    var btn = document.getElementById("identity-toggle");
+    if (!line || !btn) return;
+
+    function registered() {
+      try { return localStorage.getItem(KEY) === "1"; } catch (e) { return false; }
+    }
+
+    function render() {
+      var on = registered();
+      line.textContent = on ? "YOU ARE C4-621." : "YOU ARE UNREGISTERED.";
+      btn.textContent = on ? "[ GO DARK ]" : "[ REGISTER ]";
+    }
+
+    btn.addEventListener("click", function () {
+      try { localStorage.setItem(KEY, registered() ? "0" : "1"); } catch (e) {}
+      render();
+    });
+
+    render();
+  }
+
   /* ── go ───────────────────────────────────────────────────────────── */
 
   if (!bootEl || !logEl || !shellEl) return;
+
+  // Painted immediately: the backdrop belongs to the boot screen too.
+  if (window.Portrait) window.Portrait.backdrop(document.getElementById("backdrop"));
 
   // A deep link should never make you sit through the boot.
   var deepLink = location.hash && location.hash !== "#/" && location.hash !== "#";

@@ -7,15 +7,33 @@
 window.Terminal = (function () {
   "use strict";
 
-  var input;
+  var input, logEl, panelEl, toggleEl;
   var history = [];
   var histPos = -1;      // -1 = not browsing history
   var inited = false;
 
+  var OPEN_KEY = "rubicon.console";
+  var DESKTOP = "(min-width: 901px)";
+
   function esc(s) { return window.Render.esc(s); }
 
+  /* Output lands in the console's own scrollback, not in the page —
+     the panel is a transcript you can scroll back through while the
+     view beside it keeps navigating. */
+  function push(html) {
+    if (!logEl) return;
+    var block = document.createElement("div");
+    block.innerHTML = html;
+    while (block.firstChild) logEl.appendChild(block.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
   function out(lines) {
-    window.Router.notice("<div class=\"term-out\">" + lines.join("\n") + "</div>");
+    push("<div class=\"term-out\">" + lines.join("\n") + "</div>");
+  }
+
+  function echo(line) {
+    push("<p class=\"term-echo\">" + esc(line) + "</p>");
   }
 
   function err(msg) {
@@ -43,19 +61,24 @@ window.Terminal = (function () {
       out([
         "<span class=\"t-key\">AVAILABLE COMMANDS</span>",
         "",
-        "  <span class=\"t-cmd\">help</span>              this list",
-        "  <span class=\"t-cmd\">list targets</span>      every boss dossier",
-        "  <span class=\"t-cmd\">list records</span>      every archive record",
-        "  <span class=\"t-cmd\">boss &lt;name&gt;</span>       open a dossier   e.g. boss balteus",
-        "  <span class=\"t-cmd\">lore &lt;name&gt;</span>       open a record    e.g. lore coral",
-        "  <span class=\"t-cmd\">doctrine</span>          the six tenets",
-        "  <span class=\"t-cmd\">spoilers on|off</span>   seal or unseal restricted records",
-        "  <span class=\"t-cmd\">home</span>              back to the terminal",
-        "  <span class=\"t-cmd\">clear</span>             clear this output",
+        /* Kept inside ~40 columns: the console is a narrow panel, and
+           wrapped help defeats the alignment it depends on. */
+        "  <span class=\"t-cmd\">help</span>             this list",
+        "  <span class=\"t-cmd\">list targets</span>     boss dossiers",
+        "  <span class=\"t-cmd\">list records</span>     archive records",
+        "  <span class=\"t-cmd\">boss &lt;name&gt;</span>      open a dossier",
+        "  <span class=\"t-cmd\">lore &lt;name&gt;</span>      open a record",
+        "  <span class=\"t-cmd\">doctrine</span>         the six tenets",
+        "  <span class=\"t-cmd\">spoilers on|off</span>  seal / unseal",
+        "  <span class=\"t-cmd\">home</span>             back to the top",
+        "  <span class=\"t-cmd\">clear</span>            clear this output",
+        "  <span class=\"t-cmd\">phosphor</span>         cycle the colour",
         "",
-        "<span class=\"t-key\">Arrow Up / Down</span> walks your command history."
+        "e.g. <span class=\"t-cmd\">boss balteus</span> / <span class=\"t-cmd\">lore coral</span>",
+        "",
+        "<span class=\"t-key\">Arrow Up / Down</span> walks your command history.",
+        "<span class=\"t-key\">Esc</span> closes this console, <span class=\"t-key\">/</span> reopens it."
       ]);
-      window.Router.paint();
     },
 
     list: function (arg) {
@@ -70,15 +93,13 @@ window.Terminal = (function () {
         return;
       }
       err("list: don't know how to list \"" + arg + "\". Try: list targets | list records");
-      window.Router.paint();
     },
 
     boss: function (arg) {
-      if (!arg) { err("boss: needs a name. e.g. boss balteus"); window.Router.paint(); return; }
+      if (!arg) { err("boss: needs a name. e.g. boss balteus"); return; }
       var b = find(window.AC6_BOSSES || [], arg, "designation");
       if (!b) {
         err("boss: no dossier matching \"" + arg + "\". Try: list targets");
-        window.Router.paint();
         return;
       }
       window.Router.go("/boss/" + b.id);
@@ -89,7 +110,6 @@ window.Terminal = (function () {
       var e = find(window.AC6_LORE || [], arg, "title");
       if (!e) {
         err("lore: no record matching \"" + arg + "\". Try: list records");
-        window.Router.paint();
         return;
       }
       window.Router.go("/lore/" + e.id);
@@ -107,24 +127,24 @@ window.Terminal = (function () {
         window.Render.setSpoilers(false);
       } else {
         err("spoilers: use \"spoilers on\" or \"spoilers off\".");
-        window.Router.paint();
         return;
       }
       out(["<span class=\"t-key\">SPOILERS " +
            (window.Render.spoilersUnlocked() ? "OPEN" : "LOCKED") + "</span>"]);
-      // Re-run start-of-page wiring so the nav chip updates too.
-      var toggle = document.getElementById("spoiler-toggle");
-      var state = document.getElementById("spoiler-state");
-      if (toggle) toggle.setAttribute("aria-pressed",
-        window.Render.spoilersUnlocked() ? "true" : "false");
-      if (state) state.textContent =
-        window.Render.spoilersUnlocked() ? "OPEN" : "LOCKED";
+      // The nav chip and the key bar both carry this state.
+      window.Router.syncToggle();
       window.Router.paint();
     },
 
     clear: function () {
-      window.Router.notice(null);
-      window.Router.paint();
+      if (logEl) logEl.innerHTML = "";
+    },
+
+    /* Same action as F8 — the key bar and the console must never disagree
+       about what the machine can do. */
+    phosphor: function () {
+      var key = document.querySelector("[data-act=\"phosphor\"]");
+      if (key) key.click();
     },
 
     /* ── easter eggs ────────────────────────────────────────────────── */
@@ -139,7 +159,6 @@ window.Terminal = (function () {
         "",
         "The name was already used. You are wearing it anyway."
       ]);
-      window.Router.paint();
     },
 
     ayre: function () {
@@ -149,19 +168,16 @@ window.Terminal = (function () {
         "  Can you hear me? Good.",
         "  I've been with you since the ice."
       ]);
-      window.Router.paint();
     },
 
     "621": function () {
       out(["<span class=\"t-key\">C4-621</span> — augmented human, unregistered.",
            "Say nothing. Take the contract."]);
-      window.Router.paint();
     },
 
     burn: function () {
       out(["<span class=\"t-err\">COMMAND WITHHELD</span>",
            "That choice is not the archive's to make."]);
-      window.Router.paint();
     }
   };
 
@@ -173,19 +189,59 @@ window.Terminal = (function () {
 
     history.push(trimmed);
     histPos = -1;
+    echo(trimmed);
 
     var space = trimmed.indexOf(" ");
     var name = (space === -1 ? trimmed : trimmed.slice(0, space)).toLowerCase();
     var arg = space === -1 ? "" : trimmed.slice(space + 1).trim();
 
     if (COMMANDS[name]) COMMANDS[name](arg);
-    else {
-      err(name + ": command not found. Type help.");
-      window.Router.paint();
+    else err(name + ": command not found. Type help.");
+
+    // Router.paint() moves focus to the view; the prompt should keep it so
+    // you can chain commands without reaching for the mouse.
+    if (input && isOpen()) input.focus();
+  }
+
+  /* ── panel open / close ───────────────────────────────────────────── */
+
+  function desktop() {
+    return !window.matchMedia || window.matchMedia(DESKTOP).matches;
+  }
+
+  function isOpen() {
+    return !!panelEl && panelEl.classList.contains("is-open");
+  }
+
+  function remember(open) {
+    try { localStorage.setItem(OPEN_KEY, open ? "1" : "0"); } catch (e) {}
+  }
+
+  function recall() {
+    try { return localStorage.getItem(OPEN_KEY) !== "0"; }   // open by default
+    catch (e) { return true; }
+  }
+
+  /* `focus === false` means this is a layout sync rather than a choice the
+     reader made, so it neither steals focus nor overwrites the preference. */
+  function setOpen(open, focus) {
+    if (!panelEl) return;
+    panelEl.classList.toggle("is-open", open);
+    document.body.classList.toggle("console-open", open);
+    if (toggleEl) toggleEl.setAttribute("aria-pressed", open ? "true" : "false");
+    if (focus !== false) {
+      remember(open);
+      // Deferred: the click that opened the panel focuses its own button
+      // afterwards, and would otherwise steal the caret back.
+      if (open && input) setTimeout(function () { input.focus(); }, 0);
     }
   }
 
   function onKey(e) {
+    if (e.key === "Escape") {
+      setOpen(false);
+      return;
+    }
     if (e.key === "Enter") {
       run(input.value);
       input.value = "";
@@ -210,18 +266,56 @@ window.Terminal = (function () {
   function init() {
     if (inited) return;
     inited = true;
-    input = document.getElementById("cmd");
-    if (!input) return;
+
+    input   = document.getElementById("cmd");
+    logEl   = document.getElementById("console-log");
+    panelEl = document.getElementById("console");
+    toggleEl = document.getElementById("console-toggle");
+    if (!input || !panelEl) return;
+
     input.addEventListener("keydown", onKey);
 
-    // "/" focuses the prompt, the way it does in every tool worth using.
+    if (toggleEl) {
+      toggleEl.addEventListener("click", function () { setOpen(!isOpen()); });
+    }
+    var closeEl = document.getElementById("console-close");
+    if (closeEl) closeEl.addEventListener("click", function () { setOpen(false); });
+
+    out([
+      "<span class=\"t-key\">RUBICON ARCHIVE</span> command link established.",
+      "Type <span class=\"t-cmd\">help</span> for the command list."
+    ]);
+
+    // Restore the last state, but never open the panel on a narrow screen —
+    // CSS hides it there and a stale flag shouldn't shift the layout.
+    setOpen(desktop() && recall(), false);
+
+    // Crossing the breakpoint mid-session should land you in the state that
+    // width implies, not the one you left behind.
+    if (window.matchMedia) {
+      var mq = window.matchMedia(DESKTOP);
+      var onChange = function () { setOpen(mq.matches && recall(), false); };
+      if (mq.addEventListener) mq.addEventListener("change", onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
+
+    // "/" opens and focuses the prompt, the way it does in every tool
+    // worth using.
     document.addEventListener("keydown", function (e) {
-      if (e.key === "/" && document.activeElement !== input) {
-        e.preventDefault();
-        input.focus();
-      }
+      if (e.key !== "/" || document.activeElement === input) return;
+      var tag = (document.activeElement.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      if (!desktop()) return;
+      e.preventDefault();
+      setOpen(true);
     });
   }
 
-  return { init: init, run: run };
+  /* For other modules that need to report into the transcript without
+     pretending a command was typed. */
+  function say(text) {
+    out(["<span class=\"t-key\">" + esc(text) + "</span>"]);
+  }
+
+  return { init: init, run: run, say: say, setOpen: setOpen, isOpen: isOpen };
 })();

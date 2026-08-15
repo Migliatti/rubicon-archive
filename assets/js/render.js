@@ -53,6 +53,33 @@ window.Render = (function () {
     return "<hr><p class=\"notice notice-dim\">" + esc(creed.footerNote || "") + "</p>";
   }
 
+  /* A framed panel with an inverse-video title bar. The unit of layout. */
+  function panel(title, meta, body) {
+    return "<section class=\"panel\">" +
+             "<header class=\"panel-bar\">" +
+               "<span class=\"panel-title\">" + esc(title) + "</span>" +
+               (meta ? "<span class=\"panel-meta\">" + esc(meta) + "</span>" : "") +
+             "</header>" +
+             "<div class=\"panel-body\">" + body + "</div>" +
+           "</section>";
+  }
+
+  /* A panel whose body is a data grid: no padding, the table is the panel. */
+  function gridPanel(title, meta, head, rows) {
+    return "<section class=\"panel\">" +
+             "<header class=\"panel-bar\">" +
+               "<span class=\"panel-title\">" + esc(title) + "</span>" +
+               (meta ? "<span class=\"panel-meta\">" + esc(meta) + "</span>" : "") +
+             "</header>" +
+             "<div class=\"grid-scroll\">" +
+               "<table class=\"grid\">" +
+                 "<thead><tr>" + head + "</tr></thead>" +
+                 "<tbody>" + rows + "</tbody>" +
+               "</table>" +
+             "</div>" +
+           "</section>";
+  }
+
   /* ── spoiler state ────────────────────────────────────────────────── */
 
   function spoilersUnlocked() {
@@ -87,59 +114,70 @@ window.Render = (function () {
       : "";
 
     return "" +
-      "<pre class=\"banner\" role=\"img\" aria-label=\"Rubicon Archive\">" +
-        esc(creed.banner || "RUBICON ARCHIVE") + "</pre>" +
-      "<p class=\"eyebrow\">" + esc(creed.bannerSub || "") + "</p>" +
-      (whisper ? "<p class=\"eyebrow\">// " + esc(whisper) + "</p>" : "") +
+      "<div class=\"titlecard\">" +
+        "<span class=\"bracket\" aria-hidden=\"true\">&#8968;&nbsp;&#8971;</span>" +
+        "<pre class=\"banner\" role=\"img\" aria-label=\"Rubicon Archive\">" +
+          esc(creed.banner || "RUBICON ARCHIVE") + "</pre>" +
+        "<p class=\"eyebrow\">" + esc(creed.bannerSub || "") + "</p>" +
+        (whisper ? "<p class=\"whisper\">" + esc(whisper) + "</p>" : "") +
+        "<span class=\"bracket\" aria-hidden=\"true\">&#8970;&nbsp;&#8969;</span>" +
+        "<p class=\"lede\">" + esc(creed.homeLede || "") + "</p>" +
+      "</div>" +
 
-      "<p class=\"lede\">" + esc(creed.homeLede || "") + "</p>" +
+      gridPanel("INDEX", "3 VOLUMES",
+        "<th>KEY</th><th>VOLUME</th><th class=\"num\">REC</th><th>CONTENTS</th>",
+        "<tr>" +
+          "<td class=\"class\">F2</td>" +
+          "<td><a class=\"rec\" href=\"#/bosses\">TARGETS</a></td>" +
+          "<td class=\"num\">" + bosses.length + "</td>" +
+          "<td class=\"desc\">Every story-critical machine on Rubicon 3 — what it " +
+          "does, which phase it dies in, and what to bring.</td>" +
+        "</tr>" +
+        "<tr>" +
+          "<td class=\"class\">F3</td>" +
+          "<td><a class=\"rec\" href=\"#/lore\">ARCHIVE</a></td>" +
+          "<td class=\"num\">" + lore.length + "</td>" +
+          "<td class=\"desc\">Recovered transmissions: the Coral, the Fires of Ibis, " +
+          "the corporations, the people who lied to you, and the three ways out.</td>" +
+        "</tr>" +
+        "<tr>" +
+          "<td class=\"class\">F4</td>" +
+          "<td><a class=\"rec\" href=\"#/creed\">DOCTRINE</a></td>" +
+          "<td class=\"num\">6</td>" +
+          "<td class=\"desc\">Six tenets. You do not have to accept them. You will " +
+          "keep coming back to them.</td>" +
+        "</tr>") +
 
-      "<p class=\"rule-label\">SECTIONS</p>" +
-      "<ul class=\"rows\">" +
-        "<li><a class=\"row\" href=\"#/bosses\">" +
-          "<span class=\"row-head\">" +
-            "<span class=\"row-name\">TARGETS</span>" +
-            "<span class=\"row-meta\">" + bosses.length + " DOSSIERS</span>" +
-          "</span>" +
-          "<p class=\"row-summary\">Every story-critical machine on Rubicon 3 — what it does, " +
-          "which phase it dies in, and what to bring.</p>" +
-        "</a></li>" +
-        "<li><a class=\"row\" href=\"#/lore\">" +
-          "<span class=\"row-head\">" +
-            "<span class=\"row-name\">ARCHIVE</span>" +
-            "<span class=\"row-meta\">" + lore.length + " RECORDS</span>" +
-          "</span>" +
-          "<p class=\"row-summary\">Recovered transmissions: the Coral, the Fires of Ibis, " +
-          "the corporations, the people who lied to you, and the three ways out.</p>" +
-        "</a></li>" +
-        "<li><a class=\"row\" href=\"#/creed\">" +
-          "<span class=\"row-head\">" +
-            "<span class=\"row-name\">DOCTRINE</span>" +
-            "<span class=\"row-meta\">READ ONCE</span>" +
-          "</span>" +
-          "<p class=\"row-summary\">Six tenets. You do not have to accept them. " +
-          "You will keep coming back to them.</p>" +
-        "</a></li>" +
-      "</ul>" +
-
-      "<p class=\"rule-label\">TERMINAL</p>" +
-      "<p class=\"lede\">This page takes typed commands. Try <code>help</code>, " +
-      "<code>list targets</code>, or <code>boss balteus</code> in the bar at the bottom.</p>" +
+      panel("INPUT", "KEYS + COMMANDS",
+        "<p class=\"lede\">The bar along the bottom is live: <b>F1</b>–<b>F6</b> " +
+        "navigate and toggle, <b>F8</b> cycles the phosphor. The bare digits " +
+        "<b>1</b>–<b>6</b> and <b>8</b> do the same, for keyboards that reserve " +
+        "the function row.</p>" +
+        "<p class=\"lede\">On a wide screen the archive also takes typed commands. " +
+        "<b>F6</b> or <code>/</code> opens the console, then try <code>help</code>, " +
+        "<code>list targets</code>, or <code>boss balteus</code>. Everything it " +
+        "does is also a link.</p>") +
 
       footer();
   }
 
   /* ── BOSS INDEX ───────────────────────────────────────────────────── */
 
+  var BOSS_HEAD =
+    "<th>ID</th><th>DESIGNATION</th><th>ALIAS</th>" +
+    "<th class=\"num\">CH</th><th>CLASS</th><th>THREAT</th><th>MISSION</th>";
+
   function bossRow(b) {
-    return "<li><a class=\"row\" href=\"#/boss/" + esc(b.id) + "\">" +
-      "<span class=\"row-head\">" +
-        "<span class=\"row-name\">" + esc(b.designation) + "</span>" +
-        (b.alias ? "<span class=\"row-alias\">" + esc(b.alias) + "</span>" : "") +
-        "<span class=\"row-meta\">" + threatMeter(b.threat) + "</span>" +
-      "</span>" +
-      "<p class=\"row-summary\">" + esc(b.mission) + "</p>" +
-    "</a></li>";
+    return "<tr>" +
+      "<td class=\"class\">" + esc(b.id.slice(0, 10)) + "</td>" +
+      "<td><a class=\"rec\" href=\"#/boss/" + esc(b.id) + "\">" +
+        esc(b.designation) + "</a></td>" +
+      "<td class=\"alias\">" + esc(b.alias || "—") + "</td>" +
+      "<td class=\"num\">" + esc(b.chapter) + "</td>" +
+      "<td class=\"class\">" + esc(b.type) + "</td>" +
+      "<td>" + threatMeter(b.threat) + "</td>" +
+      "<td class=\"desc\">" + esc(b.mission) + "</td>" +
+    "</tr>";
   }
 
   function bossIndex() {
@@ -154,18 +192,19 @@ window.Render = (function () {
     order.sort(function (a, b) { return a - b; });
 
     var body = order.map(function (ch) {
-      return "<p class=\"rule-label\">CHAPTER " + esc(ch) + "</p>" +
-             "<ul class=\"rows\">" + chapters[ch].map(bossRow).join("") + "</ul>";
+      return gridPanel("CHAPTER " + ch, chapters[ch].length + " REC",
+                       BOSS_HEAD, chapters[ch].map(bossRow).join(""));
     }).join("");
 
     return "" +
       "<p class=\"eyebrow\">TARGET DOSSIERS</p>" +
       "<h1>TARGETS</h1>" +
-      "<p class=\"lede\">Story-critical engagements, in the order Rubicon throws them at you. " +
-      "Threat is scored on how hard the fight hits an unprepared first-timer, " +
-      "not on how hard it is once you know the answer.</p>" +
-      "<p class=\"notice notice-dim\">Mission names are spoilers by nature. " +
-      "Nothing past Chapter 1 is safe to browse blind.</p>" +
+      panel("BRIEF", bosses.length + " RECORDS",
+        "<p class=\"lede\">Story-critical engagements, in the order Rubicon throws " +
+        "them at you. Threat is scored on how hard the fight hits an unprepared " +
+        "first-timer, not on how hard it is once you know the answer.</p>" +
+        "<p class=\"notice notice-dim\">Mission names are spoilers by nature. " +
+        "Nothing past Chapter 1 is safe to browse blind.</p>") +
       body +
       footer();
   }
@@ -241,19 +280,22 @@ window.Render = (function () {
 
   var LORE_ORDER = ["Rubicon", "Coral", "Factions", "Characters", "Endings"];
 
+  var LORE_HEAD =
+    "<th>ID</th><th>RECORD</th><th>CLASS</th><th>ABSTRACT</th>";
+
   function loreRow(entry) {
     var sealedNow = entry.spoiler && !spoilersUnlocked();
-    return "<li><a class=\"row\" href=\"#/lore/" + esc(entry.id) + "\">" +
-      "<span class=\"row-head\">" +
-        "<span class=\"row-name\">" + esc(entry.title) + "</span>" +
-        "<span class=\"row-meta\">" + esc(entry.classification) + "</span>" +
-      "</span>" +
-      "<p class=\"row-summary\">" +
-        (sealedNow
-          ? "██████ REDACTED — unlock spoilers to read ██████"
-          : esc((entry.body && entry.body[0] ? entry.body[0] : "").slice(0, 160) + "…")) +
-      "</p>" +
-    "</a></li>";
+    var abstract = sealedNow
+      ? "<span class=\"redacted\">████ REDACTED ████</span>"
+      : esc((entry.body && entry.body[0] ? entry.body[0] : "").slice(0, 120) + "…");
+
+    return "<tr>" +
+      "<td class=\"class\">" + esc(entry.id.slice(0, 12)) + "</td>" +
+      "<td><a class=\"rec\" href=\"#/lore/" + esc(entry.id) + "\">" +
+        esc(entry.title) + "</a></td>" +
+      "<td class=\"class\">" + esc(entry.classification) + "</td>" +
+      "<td class=\"desc\">" + abstract + "</td>" +
+    "</tr>";
   }
 
   function loreIndex() {
@@ -268,16 +310,18 @@ window.Render = (function () {
       }));
 
     var body = cats.map(function (c) {
-      return "<p class=\"rule-label\">" + esc(c.toUpperCase()) + "</p>" +
-             "<ul class=\"rows\">" + groups[c].map(loreRow).join("") + "</ul>";
+      return gridPanel(c.toUpperCase(), groups[c].length + " REC",
+                       LORE_HEAD, groups[c].map(loreRow).join(""));
     }).join("");
 
     return "" +
       "<p class=\"eyebrow\">RECOVERED TRANSMISSIONS</p>" +
       "<h1>ARCHIVE</h1>" +
-      "<p class=\"lede\">What we could pull off the planet before the link degraded. " +
-      "Entries marked RESTRICTED or REDACTED stay sealed until you unlock spoilers " +
-      "in the bar above.</p>" +
+      panel("BRIEF", lore.length + " RECORDS",
+        "<p class=\"lede\">What we could pull off the planet before the link " +
+        "degraded. Entries marked RESTRICTED or REDACTED stay sealed until you " +
+        "unlock spoilers — <b>F5</b>, or the SPOILERS key at the bottom of " +
+        "the screen.</p>") +
       body +
       footer();
   }

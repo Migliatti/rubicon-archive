@@ -237,19 +237,26 @@ window.Portrait = (function () {
     if (cap) cap.textContent = text;
   }
 
+  /* Downscale hard, then quantise. Shared by portraits and the page
+     backdrop — same ramp, same dither, so they read as one image set. */
+  function paint(canvas, img, width) {
+    var w = width;
+    var h = Math.max(1, Math.round(w * (img.height / img.width)));
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;   // smooth on the way DOWN
+    ctx.drawImage(img, 0, 0, w, h);
+    var ok = quantise(ctx, w, h);
+    canvas.setAttribute("data-source", ok ? "photo" : "photo-untinted");
+    return ok;
+  }
+
   function drawImageSource(canvas, boss, src, width) {
     var img = new Image();
     var PW = width || PIXEL_W;
     img.onload = function () {
-      var w = PW;
-      var h = Math.max(1, Math.round(PW * (img.height / img.width)));
-      canvas.width = w;
-      canvas.height = h;
-      var ctx = canvas.getContext("2d");
-      ctx.imageSmoothingEnabled = true;   // smooth on the way DOWN
-      ctx.drawImage(img, 0, 0, w, h);
-      var ok = quantise(ctx, w, h);
-      canvas.setAttribute("data-source", ok ? "photo" : "photo-untinted");
+      paint(canvas, img, PW);
       canvas.classList.remove("portrait-pending");
       setCaption(canvas, LABEL_PHOTO);
     };
@@ -325,5 +332,45 @@ window.Portrait = (function () {
     }
   }
 
-  return { markup: markup, emblemMarkup: emblemMarkup, hydrate: hydrate };
+  /* ── page backdrop ────────────────────────────────────────────────── */
+
+  var BACKDROP_W = 190;   // wider than a portrait: it is displayed huge
+  var backdropPick = null;   // held so a repaint keeps the same machine
+
+  /* Paints one boss portrait, chosen at random per visit, into the
+     full-page backdrop canvas. Decoration with no fallback: if the file
+     is missing or the list is empty, the canvas simply stays empty. */
+  function backdrop(canvas) {
+    if (!canvas) return;
+    var pool = (window.AC6_BOSSES || []).filter(function (b) { return b.portrait; });
+    if (!pool.length) { canvas.style.display = "none"; return; }
+
+    var pick = backdropPick || pool[Math.floor(Math.random() * pool.length)];
+    backdropPick = pick;
+    var img = new Image();
+    img.onload = function () {
+      paint(canvas, img, BACKDROP_W);
+      canvas.setAttribute("data-backdrop", pick.id);
+    };
+    img.onerror = function () { canvas.style.display = "none"; };
+    img.src = pick.portrait;
+  }
+
+  /* Redraw everything on the current ramp. Called when the phosphor is
+     swapped: the artwork is quantised, not tinted, so CSS alone cannot
+     follow a palette change. */
+  function repaint() {
+    var nodes = document.querySelectorAll("[data-portrait]");
+    for (var i = 0; i < nodes.length; i++) nodes[i].removeAttribute("data-source");
+    hydrate(document);
+    backdrop(document.getElementById("backdrop"));
+  }
+
+  return {
+    markup: markup,
+    emblemMarkup: emblemMarkup,
+    hydrate: hydrate,
+    backdrop: backdrop,
+    repaint: repaint
+  };
 })();

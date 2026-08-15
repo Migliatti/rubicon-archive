@@ -9,7 +9,6 @@ window.Router = (function () {
 
   var viewEl, navEl, toggleEl, stateEl;
   var started = false;
-  var pendingNotice = null;   // terminal output to show above the next view
 
   var TITLE = "RUBICON ARCHIVE";
 
@@ -48,11 +47,11 @@ window.Router = (function () {
   function paint() {
     var view = resolve(parse());
 
-    viewEl.innerHTML = (pendingNotice || "") + view.html;
-    pendingNotice = null;
+    viewEl.innerHTML = view.html;
 
     document.title = view.title;
     markNav(view.nav);
+    if (window.Keybar) window.Keybar.mark(view.nav);
     wireDecrypt();
     if (window.Portrait) window.Portrait.hydrate(viewEl);
 
@@ -87,10 +86,12 @@ window.Router = (function () {
   /* ── spoiler toggle ───────────────────────────────────────────────── */
 
   function syncToggle() {
-    if (!toggleEl) return;
     var on = window.Render.spoilersUnlocked();
-    toggleEl.setAttribute("aria-pressed", on ? "true" : "false");
+    if (toggleEl) toggleEl.setAttribute("aria-pressed", on ? "true" : "false");
     if (stateEl) stateEl.textContent = on ? "OPEN" : "LOCKED";
+    // The key bar carries the same state — on a phone it is the only copy.
+    var keyState = document.getElementById("key-spoiler-state");
+    if (keyState) keyState.textContent = on ? "OPEN" : "LOCKED";
   }
 
   function wireToggle() {
@@ -112,11 +113,6 @@ window.Router = (function () {
     else location.hash = next;
   }
 
-  /* Queue a block of terminal output to appear above the next view. */
-  function notice(html) {
-    pendingNotice = html;
-  }
-
   function start() {
     if (started) return;
     started = true;
@@ -132,5 +128,5 @@ window.Router = (function () {
     paint();
   }
 
-  return { start: start, go: go, paint: paint, notice: notice };
+  return { start: start, go: go, paint: paint, syncToggle: syncToggle };
 })();

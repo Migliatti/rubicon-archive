@@ -33,30 +33,43 @@ $types = @{
 try {
   while ($listener.IsListening) {
     $ctx = $listener.GetContext()
-    $rel = [System.Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath).TrimStart('/')
-    if ($rel -eq "") { $rel = "index.html" }
-    $path = Join-Path $Root $rel
 
-    # Keep requests inside the served root.
-    $full = [System.IO.Path]::GetFullPath($path)
-    $rootFull = [System.IO.Path]::GetFullPath($Root)
+    # One malformed or aborted request must not take the server down with
+    # it — browsers and tooling probe in ways this loop can't anticipate.
+    try {
+      $rel = [System.Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath).TrimStart('/')
+      if ($rel -eq "") { $rel = "index.html" }
+      $path = Join-Path $Root $rel
 
-    if ($full.StartsWith($rootFull) -and (Test-Path $full -PathType Leaf)) {
-      $ext = [System.IO.Path]::GetExtension($full).ToLower()
-      $ct = $types[$ext]
-      if (-not $ct) { $ct = "application/octet-stream" }
-      $bytes = [System.IO.File]::ReadAllBytes($full)
-      # Dev server: never cache, or edits appear not to take effect.
-      $ctx.Response.Headers.Add("Cache-Control", "no-store, must-revalidate")
-      $ctx.Response.ContentType = $ct
-      $ctx.Response.ContentLength64 = $bytes.Length
-      $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
-    } else {
-      $ctx.Response.StatusCode = 404
-      $msg = [System.Text.Encoding]::UTF8.GetBytes("404 $rel")
-      $ctx.Response.OutputStream.Write($msg, 0, $msg.Length)
+      # HEAD gets the headers and nothing else; writing a body to one is an
+      # error, not a courtesy.
+      $bodyAllowed = $ctx.Request.HttpMethod -ne "HEAD"
+
+      # Keep requests inside the served root.
+      $full = [System.IO.Path]::GetFullPath($path)
+      $rootFull = [System.IO.Path]::GetFullPath($Root)
+
+      if ($full.StartsWith($rootFull) -and (Test-Path $full -PathType Leaf)) {
+        $ext = [System.IO.Path]::GetExtension($full).ToLower()
+        $ct = $types[$ext]
+        if (-not $ct) { $ct = "application/octet-stream" }
+        $bytes = [System.IO.File]::ReadAllBytes($full)
+        # Dev server: never cache, or edits appear not to take effect.
+        $ctx.Response.Headers.Add("Cache-Control", "no-store, must-revalidate")
+        $ctx.Response.ContentType = $ct
+        $ctx.Response.ContentLength64 = $bytes.Length
+        if ($bodyAllowed) { $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length) }
+      } else {
+        $ctx.Response.StatusCode = 404
+        $msg = [System.Text.Encoding]::UTF8.GetBytes("404 $rel")
+        $ctx.Response.ContentLength64 = $msg.Length
+        if ($bodyAllowed) { $ctx.Response.OutputStream.Write($msg, 0, $msg.Length) }
+      }
+    } catch {
+      Write-Output "request failed: $($_.Exception.Message)"
     }
-    $ctx.Response.OutputStream.Close()
+
+    try { $ctx.Response.OutputStream.Close() } catch {}
   }
 } finally {
   $listener.Stop()

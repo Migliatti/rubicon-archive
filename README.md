@@ -36,7 +36,8 @@ assets/js/boot.js           boot animation, runs last, hands off to the router
 assets/js/router.js         hash routing (#/bosses, #/boss/balteus, #/lore/coral)
 assets/js/render.js         every view; each renderer returns an HTML string
 assets/js/portrait.js       boss imagery — pixelation, dithering, fallback sprites
-assets/js/terminal.js       the command prompt
+assets/js/terminal.js       the side console: commands, scrollback, open/close
+assets/js/keybar.js         function key bar: F1-F6, F8 phosphor, key bindings
 assets/img/bosses/          portraits + emblems (see the README in there)
 data/bosses.js              window.AC6_BOSSES
 data/lore.js                window.AC6_LORE
@@ -46,9 +47,26 @@ tools/serve.ps1             optional local http server (no Node required)
 ```
 
 Scripts must load in this order: `data/*` (globals only) → `render` → `portrait`
-→ `router` → `terminal` → `boot`. `boot.js` calls `Router.start()` and
-`Terminal.init()` when the animation finishes; the router calls
-`Portrait.hydrate()` after every paint.
+→ `router` → `terminal` → `keybar` → `boot`. `boot.js` calls `Keybar.init()`,
+`Router.start()` and `Terminal.init()` when the animation finishes; the router
+calls `Portrait.hydrate()` and `Keybar.mark()` after every paint.
+
+## Keys
+
+`F1` home · `F2` targets · `F3` archive · `F4` doctrine · `F5` spoilers ·
+`F6` console · `F8` phosphor. The bare digits `1`–`6` and `8` are bound to the
+same actions, because browsers reserve parts of the function row. Every key is
+also a button in the bar at the bottom of the screen, and every action it
+performs is reachable by clicking something else.
+
+`F8` cycles coral → amber → green. The choice is stored in `localStorage`
+(`rubicon.phosphor`) and the artwork is redrawn, not re-tinted — `portrait.js`
+quantises to the phosphor ramp at draw time, so `Portrait.repaint()` runs on
+every swap.
+
+Below 700px the key bar becomes the whole navigation: the function labels are
+hidden (a phone has no function row) and the top nav is removed rather than
+duplicated.
 
 ## Adding a boss
 
@@ -104,16 +122,43 @@ The reader's choice is stored in `localStorage` under `rubicon.spoilers`.
 `help` · `list targets` · `list records` · `boss <name>` · `lore <name>` ·
 `doctrine` · `spoilers on|off` · `home` · `clear`
 
+Commands live in a console docked to the right edge, with its own scrollback: you
+type on one side and the page navigates on the other. `CONSOLE` in the nav toggles
+it, `/` opens and focuses it from anywhere, `Esc` closes it. The open/closed
+choice is stored in `localStorage` under `rubicon.console`.
+
 Lookup is forgiving: exact id, then id prefix, then a substring of the display
-name — so `boss balt` finds `AAP07: BALTEUS`. Arrow Up/Down walks command history,
-and `/` focuses the prompt from anywhere.
+name — so `boss balt` finds `AAP07: BALTEUS`. Arrow Up/Down walks command history.
 
 There are a few undocumented commands. Finding them is the point.
 
-Every command is a shortcut for something that is also clickable. The prompt is
-hidden below 700px, so it must never be the only route to a page.
+Every command is a shortcut for something that is also clickable. The console does
+not exist below 900px — no room to dock it, no keyboard to enjoy it — so it must
+never be the only route to a page.
 
-## Changing the look
+## The look
+
+Four rules hold the whole thing together. Break them deliberately or not at all.
+
+0. **It is an application, not a document.** Layout unit is the `.panel` —
+   framed, with an inverse-video title bar carrying a label and a readout.
+   Indexes are `.grid` tables, one line per record, tabular numerals, columns
+   that scroll sideways rather than wrap. Tight leading, no tracking on body
+   copy. A key bar states what the keys do, always.
+1. **The page is an object on a wall.** The content sits in a bordered slab
+   (`.crt`) inset by `--frame`, with a hatched field showing around it. The
+   console is a second slab on the same wall, not a browser drawer.
+2. **Two colours, two voices.** Coral (`--phos`) is the archive talking. Ice
+   (`--ice`) is the machine talking about itself — counts, classifications,
+   the clock, the identity strip. Nothing else gets a colour.
+3. **Hard edges only.** No soft gradients, no blur, no vignette. Shadows are
+   flat offsets (`7px 7px 0 #000`); redaction is hazard tape, not a blur;
+   section labels are solid stamps. Striped patterns with hard colour stops
+   are fine — they read as flat ink, not as a fade.
+4. **One image, enormous and unexplained.** `#backdrop` is a boss portrait
+   picked at random per visit, dithered by `portrait.js` at ~190px and
+   upscaled behind everything. The slab is translucent (`--bg-slab`) so it
+   bleeds through the text. It is texture, never illustration.
 
 The palette is CSS custom properties on `:root` in `terminal.css`. Swapping the
 phosphor is three values:
@@ -124,7 +169,8 @@ phosphor is three values:
 --phos-glow: rgba(255,176,0,0.35);
 ```
 
-Green (`#33ff77` / `#1c8a41`) is the other obvious option.
+Green (`#33ff77` / `#1c8a41`) is the other obvious option. The portraits and the
+backdrop read `--phos` off `:root` at draw time, so the artwork follows.
 
 The boot sequence is data, not code — edit the `boot` array in `data/creed.js`.
 It runs once per browser session (`sessionStorage`), is skipped entirely on deep
