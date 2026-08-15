@@ -54,6 +54,7 @@ window.Router = (function () {
     document.title = view.title;
     markNav(view.nav);
     wireDecrypt();
+    if (window.Portrait) window.Portrait.hydrate(viewEl);
 
     window.scrollTo(0, 0);
     viewEl.focus({ preventScroll: true });

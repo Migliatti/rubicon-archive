@@ -35,7 +35,9 @@ assets/css/terminal.css     all styling; palette lives in :root
 assets/js/boot.js           boot animation, runs last, hands off to the router
 assets/js/router.js         hash routing (#/bosses, #/boss/balteus, #/lore/coral)
 assets/js/render.js         every view; each renderer returns an HTML string
+assets/js/portrait.js       boss imagery — pixelation, dithering, fallback sprites
 assets/js/terminal.js       the command prompt
+assets/img/bosses/          portraits + emblems (see the README in there)
 data/bosses.js              window.AC6_BOSSES
 data/lore.js                window.AC6_LORE
 data/creed.js               window.AC6_CREED — boot log, banner, doctrine
@@ -43,9 +45,10 @@ tools/serve.ps1             optional local http server (no Node required)
 .claude/launch.json         preview config pointing at that server
 ```
 
-Scripts must load in this order: `data/*` (globals only) → `render` → `router` →
-`terminal` → `boot`. `boot.js` calls `Router.start()` and `Terminal.init()` when
-the animation finishes.
+Scripts must load in this order: `data/*` (globals only) → `render` → `portrait`
+→ `router` → `terminal` → `boot`. `boot.js` calls `Router.start()` and
+`Terminal.init()` when the animation finishes; the router calls
+`Portrait.hydrate()` after every paint.
 
 ## Adding a boss
 
@@ -66,7 +69,11 @@ in the comment at the top of that file. The minimum viable entry:
   weaknesses: ["..."],
   loadoutHints: ["..."],
   verified: true,
-  sources: ["https://..."]
+  sources: ["https://..."],
+
+  // optional
+  portrait: "assets/img/bosses/some-slug.webp",
+  emblem: "assets/img/bosses/some-slug-emblem.png"
 }
 ```
 

@@ -196,6 +196,10 @@ window.Render = (function () {
       "<p class=\"eyebrow\">TARGET DOSSIER // CHAPTER " + esc(b.chapter) + "</p>" +
       "<h1>" + esc(b.designation) + "</h1>" +
       (b.alias ? "<p class=\"lede\">" + esc(b.alias) + "</p>" : "") +
+      (window.Portrait
+        ? "<div class=\"visuals\">" + window.Portrait.markup(b) +
+          window.Portrait.emblemMarkup(b) + "</div>"
+        : "") +
 
       "<ul class=\"chips\">" +
         "<li class=\"chip chip-hot\">" + esc(b.type) + "</li>" +

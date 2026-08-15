@@ -46,6 +46,8 @@ try {
       $ct = $types[$ext]
       if (-not $ct) { $ct = "application/octet-stream" }
       $bytes = [System.IO.File]::ReadAllBytes($full)
+      # Dev server: never cache, or edits appear not to take effect.
+      $ctx.Response.Headers.Add("Cache-Control", "no-store, must-revalidate")
       $ctx.Response.ContentType = $ct
       $ctx.Response.ContentLength64 = $bytes.Length
       $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
