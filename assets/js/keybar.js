@@ -138,7 +138,18 @@ window.Keybar = (function () {
     }
 
     document.addEventListener("keydown", onKey);
+    measure();
   }
 
-  return { init: init, mark: mark };
+  /* The bar is fixed and wraps to two rows on a phone, so its height is not
+     knowable from CSS. Publish it so the slab and console can reserve it. */
+  function measure() {
+    if (!barEl) return;
+    var h = Math.ceil(barEl.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--keybar-h", h + "px");
+  }
+
+  window.addEventListener("resize", function () { measure(); });
+
+  return { init: init, mark: mark, measure: measure };
 })();

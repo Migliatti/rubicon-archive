@@ -53,6 +53,13 @@ window.Render = (function () {
     return "<hr><p class=\"notice notice-dim\">" + esc(creed.footerNote || "") + "</p>";
   }
 
+  /* The prompt line above every title: working directory plus the command
+     that would have printed the page you are looking at. */
+  function prompt(dir, cmd) {
+    return "<p class=\"eyebrow\"><span class=\"ps\">RAVEN@RUBICON:" +
+           esc(dir) + "$</span> " + esc(cmd) + "</p>";
+  }
+
   /* A framed panel with an inverse-video title bar. The unit of layout. */
   function panel(title, meta, body) {
     return "<section class=\"panel\">" +
@@ -113,16 +120,39 @@ window.Render = (function () {
       ? whispers[Math.floor(Math.random() * whispers.length)]
       : "";
 
+    var phosphor = "CORAL";
+    try { phosphor = (localStorage.getItem("rubicon.phosphor") || "coral").toUpperCase(); }
+    catch (e) {}
+
+    /* Logo on the left, the machine reciting its own state on the right —
+       the shape every terminal greets you with. */
+    var stats = [
+      ["ARCHIVE",  "RUBICON 3 // recovered", false],
+      ["TARGETS",  bosses.length + " dossiers", false],
+      ["RECORDS",  lore.length + " transmissions", false],
+      ["DOCTRINE", "6 tenets", false],
+      ["SPOILERS", spoilersUnlocked() ? "unsealed" : "sealed", true],
+      ["PHOSPHOR", phosphor.toLowerCase(), true],
+      ["OPERATOR", "C4-621 // unregistered", true],
+      ["LINK",     "coral resonance nominal", true]
+    ].map(function (row) {
+      return "<dt>" + esc(row[0]) + "</dt>" +
+             "<dd" + (row[2] ? " class=\"cold\"" : "") + ">" + esc(row[1]) + "</dd>";
+    }).join("");
+
     return "" +
-      "<div class=\"titlecard\">" +
-        "<span class=\"bracket\" aria-hidden=\"true\">&#8968;&nbsp;&#8971;</span>" +
-        "<pre class=\"banner\" role=\"img\" aria-label=\"Rubicon Archive\">" +
+      "<div class=\"fetch\">" +
+        "<pre class=\"fetch-art\" role=\"img\" aria-label=\"Rubicon Archive\">" +
           esc(creed.banner || "RUBICON ARCHIVE") + "</pre>" +
-        "<p class=\"eyebrow\">" + esc(creed.bannerSub || "") + "</p>" +
-        (whisper ? "<p class=\"whisper\">" + esc(whisper) + "</p>" : "") +
-        "<span class=\"bracket\" aria-hidden=\"true\">&#8970;&nbsp;&#8969;</span>" +
-        "<p class=\"lede\">" + esc(creed.homeLede || "") + "</p>" +
+        "<dl class=\"fetch-info\">" +
+          "<p class=\"fetch-host\">RAVEN@RUBICON</p>" +
+          "<p class=\"fetch-rule\" aria-hidden=\"true\">" +
+            new Array(46).join("─") + "</p>" +
+          stats +
+        "</dl>" +
       "</div>" +
+      (whisper ? "<p class=\"whisper\">" + esc(whisper) + "</p>" : "") +
+      "<p class=\"lede\">" + esc(creed.homeLede || "") + "</p>" +
 
       gridPanel("INDEX", "3 VOLUMES",
         "<th>KEY</th><th>VOLUME</th><th class=\"num\">REC</th><th>CONTENTS</th>",
@@ -168,6 +198,12 @@ window.Render = (function () {
     "<th class=\"num\">CH</th><th>CLASS</th><th>THREAT</th><th>MISSION</th>";
 
   function bossRow(b) {
+    /* The page says mission names past Chapter 1 are spoilers; it has to
+       act like it. Sealed in the cell, so the column keeps its width. */
+    var mission = (b.chapter > 1 && !spoilersUnlocked())
+      ? "<span class=\"redacted\">████ SEALED ████</span>"
+      : esc(b.mission);
+
     return "<tr>" +
       "<td class=\"class\">" + esc(b.id.slice(0, 10)) + "</td>" +
       "<td><a class=\"rec\" href=\"#/boss/" + esc(b.id) + "\">" +
@@ -176,7 +212,7 @@ window.Render = (function () {
       "<td class=\"num\">" + esc(b.chapter) + "</td>" +
       "<td class=\"class\">" + esc(b.type) + "</td>" +
       "<td>" + threatMeter(b.threat) + "</td>" +
-      "<td class=\"desc\">" + esc(b.mission) + "</td>" +
+      "<td class=\"desc\">" + mission + "</td>" +
     "</tr>";
   }
 
@@ -197,7 +233,7 @@ window.Render = (function () {
     }).join("");
 
     return "" +
-      "<p class=\"eyebrow\">TARGET DOSSIERS</p>" +
+      prompt("/rubicon3", "ls -l targets/") +
       "<h1>TARGETS</h1>" +
       panel("BRIEF", bosses.length + " RECORDS",
         "<p class=\"lede\">Story-critical engagements, in the order Rubicon throws " +
@@ -232,7 +268,7 @@ window.Render = (function () {
       : "";
 
     var body = "" +
-      "<p class=\"eyebrow\">TARGET DOSSIER // CHAPTER " + esc(b.chapter) + "</p>" +
+      prompt("/rubicon3/targets", "cat " + b.id + ".dos") +
       "<h1>" + esc(b.designation) + "</h1>" +
       (b.alias ? "<p class=\"lede\">" + esc(b.alias) + "</p>" : "") +
       (window.Portrait
@@ -315,7 +351,7 @@ window.Render = (function () {
     }).join("");
 
     return "" +
-      "<p class=\"eyebrow\">RECOVERED TRANSMISSIONS</p>" +
+      prompt("/rubicon3", "ls -l archive/") +
       "<h1>ARCHIVE</h1>" +
       panel("BRIEF", lore.length + " RECORDS",
         "<p class=\"lede\">What we could pull off the planet before the link " +
@@ -338,8 +374,7 @@ window.Render = (function () {
     }).join("");
 
     var body = "" +
-      "<p class=\"eyebrow\">" + esc(e.category.toUpperCase()) +
-        " // " + esc(e.classification) + "</p>" +
+      prompt("/rubicon3/archive", "cat " + e.id + ".rec") +
       "<h1>" + esc(e.title) + "</h1>" +
       paras(e.body) +
       (e.quote
@@ -365,7 +400,7 @@ window.Render = (function () {
     }).join("");
 
     return "" +
-      "<p class=\"eyebrow\">FOR INITIATES</p>" +
+      prompt("/rubicon3", "cat doctrine.txt") +
       "<h1>" + esc(d.title || "DOCTRINE") + "</h1>" +
       "<p class=\"lede\">" + esc(d.lede || "") + "</p>" +
       tenets +
@@ -379,7 +414,7 @@ window.Render = (function () {
 
   function notFound(msg) {
     return "" +
-      "<p class=\"eyebrow\">SIGNAL LOST</p>" +
+      prompt("/rubicon3", "cat ?") +
       "<h1>404 // NO SUCH RECORD</h1>" +
       "<p class=\"lede\">" + esc(msg || "That path is not in the archive.") + "</p>" +
       "<div class=\"transmission\"><p>The link dropped. Whatever was here, " +

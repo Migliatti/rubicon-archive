@@ -103,15 +103,16 @@ body {
 /* One dithered machine, enormous, unexplained, behind everything. It is
    drawn at ~200px and upscaled, so it stays a texture and never resolves
    into an illustration competing with the text. */
+/* Covers the viewport exactly — no overhang to drift, no gap to expose.
+   A canvas is a replaced element, so object-fit applies to it. */
 .backdrop {
   position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
+  inset: 0;
   z-index: 0;
-  height: calc(var(--slab-h) * 0.96);
-  width: auto;
-  max-width: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 65%;
   opacity: 0.4;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -258,6 +259,8 @@ body {
 }
 .brand:hover .brand-name { text-decoration: underline; }
 .brand-mark { font-size: 0.8em; }
+/* The strip states the access level before it states anything else. */
+.brand-access { font-weight: 400; opacity: 0.75; }
 
 .topbar-meta {
   color: var(--bg);
@@ -326,30 +329,14 @@ h1, h2, h3 {
   margin: 0 0 0.6rem;
 }
 
+/* Page titles are echoed commands, not display type. No tracking, no
+   banner stripe, no size that a terminal could not print. */
 h1 {
-  position: relative;
-  font-size: clamp(1.35rem, 4vw, 2rem);
+  font-size: 1.05rem;
+  letter-spacing: 0;
   color: var(--phos);
-  text-shadow: 0 0 14px var(--phos-glow);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.1rem;
-}
-
-/* Hazard stripe under every page title — the one piece of corporate
-   signage the archive never bothered to strip out. */
-h1::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: min(100%, 22ch);
-  height: 5px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--phos-dim) 0px,
-    var(--phos-dim) 3px,
-    transparent 3px,
-    transparent 8px);
+  text-shadow: 0 0 10px var(--phos-glow);
+  margin-bottom: 0.9rem;
 }
 h2 { font-size: 1.05rem; color: var(--phos); margin-top: 2.4rem; }
 h3 { font-size: 0.95rem; color: var(--fg); }
@@ -367,12 +354,16 @@ hr {
 
 .lede { color: var(--fg-dim); }
 
+/* Where you are, and how you got here, printed as the command that would
+   have got you here. Breadcrumbs are a web idiom; a terminal echoes. */
 .eyebrow {
-  color: var(--fg-faint);
-  font-size: 0.78em;
-  letter-spacing: 0.22em;
-  margin: 0 0 0.35rem;
+  color: var(--fg-dim);
+  font-size: 0.8em;
+  letter-spacing: 0;
+  margin: 0 0 0.2rem;
+  word-break: break-word;
 }
+.eyebrow .ps { color: var(--phos-dim); }
 
 /* Section labels are solid blocks of phosphor with the ground knocked out
    of them — a stamp, not a caption. */
@@ -387,40 +378,61 @@ hr {
   letter-spacing: 0.24em;
 }
 
-/* ── title card ─────────────────────────────────────────────────────── */
+/* ── status dump ────────────────────────────────────────────────────── */
 
-/* The home page is a title card, not a document: centred, spaced out,
-   framed in brackets. Everything below the fold goes back to being a
-   left-aligned archive. */
-.titlecard {
+/* The home screen is what a terminal actually greets you with: the machine
+   printing its own state next to its logo. No hero, no centring. */
+.fetch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem 2.5rem;
   max-width: none;
-  text-align: center;
-  padding: clamp(1rem, 5vh, 3.5rem) 0 2.5rem;
+  margin: 0 0 1.2rem;
 }
 
-.titlecard .bracket {
-  display: block;
-  color: var(--phos-dim);
-  font-size: 0.9em;
-  letter-spacing: 0.4em;
+.fetch-art {
+  margin: 0;
+  color: var(--phos);
+  text-shadow: 0 0 14px var(--phos-glow);
+  font: inherit;
+  font-size: clamp(0.3rem, 1.25vw, 0.66rem);
+  line-height: 1.15;
+  white-space: pre;
 }
 
-.titlecard .eyebrow { letter-spacing: 0.34em; }
+.fetch-info {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 1.5ch;
+  margin: 0;
+  font-size: 0.88em;
+}
+.fetch-info dt { color: var(--phos); }
+.fetch-info dt::after { content: ":"; color: var(--fg-faint); }
+.fetch-info dd { margin: 0; color: var(--fg); }
+.fetch-info .cold { color: var(--ice-dim); }
 
-.titlecard .whisper {
-  margin: 1.4rem auto 0;
-  max-width: 46ch;
+.fetch-host {
+  grid-column: 1 / -1;
+  margin: 0 0 0.15rem;
   color: var(--ice);
-  font-size: 0.82em;
-  letter-spacing: 0.16em;
-  text-shadow: 0 0 14px rgba(121, 198, 216, 0.25);
+  font-weight: 700;
+}
+.fetch-rule {
+  grid-column: 1 / -1;
+  margin: 0 0 0.35rem;
+  color: var(--fg-faint);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.titlecard .lede {
-  margin: 2rem auto 0;
-  max-width: 56ch;
-  text-align: left;
+.whisper {
+  margin: 0 0 1.2rem;
+  color: var(--ice-dim);
+  font-size: 0.85em;
 }
+.whisper::before { content: "// "; color: var(--fg-faint); }
 
 /* ── ascii banner ───────────────────────────────────────────────────── */
 
@@ -435,7 +447,6 @@ hr {
   white-space: pre;
 }
 
-.titlecard .banner { display: inline-block; text-align: left; }
 
 /* ── panels ─────────────────────────────────────────────────────────── */
 
@@ -443,26 +454,34 @@ hr {
    label on the left, readout on the right. Nothing floats loose. */
 .panel {
   max-width: none;
-  margin: 0 0 1.1rem;
+  margin: 1.5rem 0 0;
   border: 1px solid var(--phos-dim);
   background: var(--bg-panel);
 }
 
+/* The label is cut into the top border, the way a framed box in a text UI
+   carries its title — ┌─[ CHAPTER 1 ]────────── 5 REC ─┐ */
 .panel-bar {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1ch;
-  padding: 0.1rem 0.6rem;
-  background: var(--phos-dim);
-  color: var(--bg);
-  font-size: 0.74em;
-  font-weight: 700;
-  letter-spacing: 0.2em;
+  margin: -0.62em 1.2ch 0;
+  font-size: 0.76em;
+  line-height: 1.2;
 }
-.panel-meta { font-weight: 400; letter-spacing: 0.12em; opacity: 0.85; }
 
-.panel-body { padding: 0.7rem 0.8rem; }
+.panel-title,
+.panel-meta {
+  background: var(--bg-panel);
+  padding: 0 0.8ch;
+}
+.panel-title { color: var(--phos); font-weight: 700; letter-spacing: 0.08em; }
+.panel-title::before { content: "[ "; color: var(--phos-dim); }
+.panel-title::after  { content: " ]"; color: var(--phos-dim); }
+.panel-meta { color: var(--ice-dim); }
+
+.panel-body { padding: 0.6rem 0.8rem 0.7rem; }
 .panel-body > :last-child { margin-bottom: 0; }
 .panel-body p { max-width: var(--measure); }
 
@@ -517,7 +536,21 @@ hr {
   width: 55%;
 }
 
-.grid .redacted { color: var(--warn); letter-spacing: 0.1em; }
+/* Sealing inside a cell: the tape runs through the column itself rather
+   than covering the row, so the grid keeps its shape while the value
+   stays unreadable. */
+.grid .redacted {
+  padding: 0 0.4ch;
+  color: var(--warn);
+  letter-spacing: 0.1em;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 176, 0, 0.22) 0px,
+    rgba(255, 176, 0, 0.22) 7px,
+    transparent 7px,
+    transparent 16px);
+}
+.grid tbody tr:hover .redacted { color: var(--warn); }
 
 /* ── chips ──────────────────────────────────────────────────────────── */
 
@@ -907,17 +940,29 @@ hr {
 
 /* Always visible, always accurate: the interface states which keys act on
    it. Every entry is a real key binding, not a picture of one. */
+/* Anchored to the viewport, not to the document. A sticky bar is
+   re-resolved by Safari a frame late during momentum scroll, which is
+   exactly the "loose HUD" wobble; a fixed one is composited once and
+   stays put. --keybar-h is measured in keybar.js so the slab and the
+   console can reserve the space. */
 .keybar {
-  position: sticky;
-  bottom: 0;
-  z-index: 6;
+  position: fixed;
+  left: var(--frame);
+  right: var(--frame);
+  bottom: var(--frame);
+  z-index: 60;
   display: flex;
   flex-wrap: wrap;
   gap: 1px;
   padding: 1px;
+  padding-bottom: calc(1px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--phos-dim);
   background: var(--rule);
 }
+
+/* Nothing hides under the bar. */
+.shell { padding-bottom: var(--keybar-h, 3rem); }
+.console { height: calc(var(--slab-h) - var(--keybar-h, 3rem) - var(--frame)); }
 
 .key {
   flex: 1 1 auto;
@@ -1051,25 +1096,12 @@ html { scrollbar-width: thin; scrollbar-color: var(--phos-dim) var(--bg-field); 
     padding: 0.5rem 0.3rem;
   }
 
-  .topbar-meta .clock, .topbar-meta .sep { display: none; }
+  .topbar-meta .clock, .topbar-meta .sep, .brand-access { display: none; }
   /* The field is a desktop luxury — on a phone the slab takes the glass. */
   :root { --frame: 0px; }
   .crt { border-left: 0; border-right: 0; }
 
-  /* On a phone the backdrop stops being a 1400px-wide fixed layer hanging
-     500px off both edges. Safari composites fixed layers separately and
-     repositions them late during momentum scroll, so an oversized one
-     visibly drifts against the content. Viewport-width, anchored, no
-     overhang: nothing left to slide. */
-  .backdrop {
-    left: 0;
-    right: 0;
-    transform: none;
-    width: 100%;
-    height: auto;
-    max-height: var(--slab-h);
-    opacity: 0.22;
-  }
+  .backdrop { opacity: 0.22; }
   .titlecard { padding-top: 0.5rem; }
   .identity { letter-spacing: 0.14em; }
   .nav { gap: 0.3rem; }
