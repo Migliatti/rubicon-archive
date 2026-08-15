@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RUBICON ARCHIVE // AC6</title>
+<meta name="description" content="An unofficial Armored Core VI archive — boss dossiers and recovered lore from Rubicon 3.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%230a0806'/><text y='12' x='2' font-family='monospace' font-size='12' fill='%23ff5a3c'>&gt;</text></svg>">
+<link rel="stylesheet" href="assets/css/terminal.css">
+</head>
+<body>
+
+<div class="crt">
+
+  <!-- ── BOOT ─────────────────────────────────────────────────────────── -->
+  <div id="boot" class="boot" role="status" aria-live="polite">
+    <pre id="boot-log" class="boot-log"></pre>
+    <p class="boot-skip">[ press any key to skip ]</p>
+  </div>
+
+  <!-- ── SHELL ────────────────────────────────────────────────────────── -->
+  <div id="shell" class="shell" hidden>
+
+    <header class="topbar">
+      <a class="brand" href="#/">
+        <span class="brand-mark">&#9670;</span>
+        <span class="brand-name">RUBICON&nbsp;ARCHIVE</span>
+      </a>
+      <div class="topbar-meta">
+        <span class="tag">C4-621</span>
+        <span class="sep">//</span>
+        <span id="clock" class="clock">--:--:--</span>
+        <span class="sep">//</span>
+        <span class="link-status">LINK <span class="ok">OK</span></span>
+      </div>
+    </header>
+
+    <nav class="nav" aria-label="Primary">
+      <a href="#/" data-nav="home">HOME</a>
+      <a href="#/bosses" data-nav="bosses">TARGETS</a>
+      <a href="#/lore" data-nav="lore">ARCHIVE</a>
+      <a href="#/creed" data-nav="creed">DOCTRINE</a>
+      <button id="spoiler-toggle" class="spoiler-toggle" type="button" aria-pressed="false">
+        SPOILERS: <span id="spoiler-state">LOCKED</span>
+      </button>
+    </nav>
+
+    <main id="view" class="view" tabindex="-1"></main>
+
+    <footer class="promptbar">
+      <label class="ps1" for="cmd">RAVEN@RUBICON:~$</label>
+      <input id="cmd" class="cmd" type="text" autocomplete="off" spellcheck="false"
+             aria-label="Terminal command input" placeholder="type help">
+    </footer>
+
+  </div>
+
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+</div>
+
+<!-- data first: these files only assign globals -->
+<script src="data/creed.js"></script>
+<script src="data/bosses.js"></script>
+<script src="data/lore.js"></script>
+<!-- then behaviour -->
+<script src="assets/js/render.js"></script>
+<script src="assets/js/router.js"></script>
+<script src="assets/js/terminal.js"></script>
+<script src="assets/js/boot.js"></script>
+</body>
+</html>
