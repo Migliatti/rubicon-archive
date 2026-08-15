@@ -28,7 +28,10 @@
   --bg-field:  #050302;
   --bg-slab:   rgba(10, 8, 6, 0.86);
   --frame:     clamp(0px, 1.4vw, 20px);
-  --slab-h:    calc(100dvh - 2 * var(--frame));
+  /* svh, not dvh: Safari's collapsing toolbar changes dvh continuously
+     while you scroll, so a dvh-sized slab resizes under your thumb and
+     the whole page appears to wobble. svh is the stable small viewport. */
+  --slab-h:    calc(100vh - 2 * var(--frame));
 
   /* text */
   --fg:        #d8cec4;
@@ -48,9 +51,19 @@
   --console-w: clamp(320px, 26vw, 420px);
 }
 
+@supports (height: 100svh) {
+  :root { --slab-h: calc(100svh - 2 * var(--frame)); }
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
-html { color-scheme: dark; }
+html {
+  color-scheme: dark;
+  /* No sideways travel and no rubber band: on iOS either one makes the
+     whole page feel unmoored from the frame around it. */
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
 
 /* The field. The page is not a surface — it is a thing pinned to a wall,
    and the wall shows around the edges. Two repeating gradients: a fine
@@ -71,7 +84,10 @@ body {
       rgba(255, 90, 60, 0.07) 2px,
       transparent 2px,
       transparent 9px);
-  background-attachment: fixed;
+  /* Deliberately not background-attachment: fixed — Safari repaints a fixed
+     background a frame behind the content it sits under, which reads as the
+     page sliding around on its own. At a 3px pitch, scrolling with the
+     content is indistinguishable anyway. */
   color: var(--fg);
   font-family: var(--mono);
   font-size: clamp(13px, 0.5vw + 11.6px, 15px);
@@ -93,7 +109,7 @@ body {
   bottom: 0;
   transform: translateX(-50%);
   z-index: 0;
-  height: 96vh;
+  height: calc(var(--slab-h) * 0.96);
   width: auto;
   max-width: none;
   opacity: 0.4;
@@ -1039,7 +1055,21 @@ html { scrollbar-width: thin; scrollbar-color: var(--phos-dim) var(--bg-field); 
   /* The field is a desktop luxury — on a phone the slab takes the glass. */
   :root { --frame: 0px; }
   .crt { border-left: 0; border-right: 0; }
-  .backdrop { opacity: 0.22; }
+
+  /* On a phone the backdrop stops being a 1400px-wide fixed layer hanging
+     500px off both edges. Safari composites fixed layers separately and
+     repositions them late during momentum scroll, so an oversized one
+     visibly drifts against the content. Viewport-width, anchored, no
+     overhang: nothing left to slide. */
+  .backdrop {
+    left: 0;
+    right: 0;
+    transform: none;
+    width: 100%;
+    height: auto;
+    max-height: var(--slab-h);
+    opacity: 0.22;
+  }
   .titlecard { padding-top: 0.5rem; }
   .identity { letter-spacing: 0.14em; }
   .nav { gap: 0.3rem; }
