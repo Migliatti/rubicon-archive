@@ -138,7 +138,7 @@ never be the only route to a page.
 
 ## The look
 
-Four rules hold the whole thing together. Break them deliberately or not at all.
+Six rules hold the whole thing together. Break them deliberately or not at all.
 
 0. **It is an application, not a document.** Layout unit is the `.panel` —
    framed, with an inverse-video title bar carrying a label and a readout.
@@ -151,6 +151,10 @@ Four rules hold the whole thing together. Break them deliberately or not at all.
 2. **Two colours, two voices.** Coral (`--phos`) is the archive talking. Ice
    (`--ice`) is the machine talking about itself — counts, classifications,
    the clock, the identity strip. Nothing else gets a colour.
+   Within coral: **dim is for lines, bright is for fills.** `--phos-dim` is
+   borders and rails only. Anything with the ground knocked out of it — the
+   status strip, section stamps, phase labels, a hovered row — fills with
+   `--phos`, because black on `--phos-dim` is 1.9:1 and nobody can read it.
 3. **Hard edges only.** No soft gradients, no blur, no vignette. Shadows are
    flat offsets (`7px 7px 0 #000`); redaction is hazard tape, not a blur;
    section labels are solid stamps. Striped patterns with hard colour stops
@@ -159,6 +163,14 @@ Four rules hold the whole thing together. Break them deliberately or not at all.
    picked at random per visit, dithered by `portrait.js` at ~190px and
    upscaled behind everything. The slab is translucent (`--bg-slab`) so it
    bleeds through the text. It is texture, never illustration.
+5. **The beam scans the display type too.** Exactly two things are allowed
+   off the character grid: the page title (`.title`, via `Render.title()`)
+   and the doctrine numerals. The title is struck through with hard
+   phosphor stripes via `background-clip: text` — not a gradient, hard
+   stops, the same flat ink as the hazard tape. Everything else is on the
+   grid at one of four sizes (`--t-xs`/`--t-sm`/`--t-md`/`--t-lg`); if you
+   reach for a fifth, the thing you are styling probably wants an existing
+   one.
 
 The palette is CSS custom properties on `:root` in `terminal.css`. Swapping the
 phosphor is three values:

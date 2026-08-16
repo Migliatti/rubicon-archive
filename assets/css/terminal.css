@@ -35,8 +35,8 @@
 
   /* text */
   --fg:        #d8cec4;
-  --fg-dim:    #8a8078;
-  --fg-faint:  #574f49;
+  --fg-dim:    #9c928a;
+  --fg-faint:  #7b726a;
 
   /* accents */
   --warn:      #ffb000;
@@ -45,6 +45,18 @@
 
   --mono: "Cascadia Mono", "JetBrains Mono", "SF Mono", Consolas,
           "DejaVu Sans Mono", ui-monospace, monospace;
+
+  /* Four sizes, and nothing between them. A terminal has a character cell
+     and a font; the only reason a value here is not 1em is that the text
+     is machine chrome rather than the record itself. Sizes are relative so
+     they ride the viewport clamp on body. */
+  --t-xs:  0.74em;   /* keys, captions, stamps, legal */
+  --t-sm:  0.82em;   /* grids, nav, meta, buttons, console */
+  --t-md:  1em;      /* the record */
+  --t-lg:  1.14em;   /* section heads */
+
+  /* The one size off the grid — see .title. */
+  --t-display: clamp(1.75rem, 5.4vw, 2.9rem);
 
   --measure: 74ch;
   --pad: clamp(0.9rem, 3vw, 2rem);
@@ -208,7 +220,7 @@ body {
   max-width: 68ch;
   width: 100%;
   color: var(--fg-faint);
-  font-size: 0.82em;
+  font-size: var(--t-sm);
   letter-spacing: 0.1em;
   animation: pulse 2.2s ease-in-out infinite;
 }
@@ -235,7 +247,12 @@ body {
 .shell[hidden] { display: none; }
 
 /* Inverse-video status strip. Every terminal worth the name states its
-   access level before it states anything else. */
+   access level before it states anything else.
+
+   One rule governs every knocked-out surface on the site: dim phosphor is
+   for lines, bright phosphor is for fills. --phos-dim under black text is
+   1.9:1 — an inverse strip nobody can read is a decoration of an inverse
+   strip. Fills are --phos and clear 5:1. */
 .topbar {
   display: flex;
   flex-wrap: wrap;
@@ -243,7 +260,7 @@ body {
   align-items: baseline;
   justify-content: space-between;
   padding: 0.15rem var(--pad);
-  background: var(--phos-dim);
+  background: var(--phos);
   color: var(--bg);
 }
 
@@ -254,17 +271,17 @@ body {
   color: var(--bg);
   text-decoration: none;
   letter-spacing: 0.14em;
-  font-size: 0.78em;
+  font-size: var(--t-sm);
   font-weight: 700;
 }
 .brand:hover .brand-name { text-decoration: underline; }
 .brand-mark { font-size: 0.8em; }
 /* The strip states the access level before it states anything else. */
-.brand-access { font-weight: 400; opacity: 0.75; }
+.brand-access { font-weight: 400; opacity: 0.72; }
 
 .topbar-meta {
   color: var(--bg);
-  font-size: 0.78em;
+  font-size: var(--t-sm);
   letter-spacing: 0.08em;
 }
 .topbar-meta .tag   { font-weight: 700; }
@@ -288,7 +305,7 @@ body {
   color: var(--fg-dim);
   text-decoration: none;
   letter-spacing: 0.14em;
-  font-size: 0.84em;
+  font-size: var(--t-sm);
   border: 1px solid transparent;
 }
 .nav a:hover { color: var(--phos); border-color: var(--phos-dim); }
@@ -302,7 +319,7 @@ body {
   margin-left: auto;
   padding: 0.28rem 0.85rem;
   font: inherit;
-  font-size: 0.78em;
+  font-size: var(--t-sm);
   letter-spacing: 0.12em;
   color: var(--fg-dim);
   background: transparent;
@@ -329,17 +346,70 @@ h1, h2, h3 {
   margin: 0 0 0.6rem;
 }
 
-/* Page titles are echoed commands, not display type. No tracking, no
-   banner stripe, no size that a terminal could not print. */
-h1 {
-  font-size: 1.05rem;
-  letter-spacing: 0;
-  color: var(--phos);
-  text-shadow: 0 0 10px var(--phos-glow);
-  margin-bottom: 0.9rem;
+h2 { font-size: var(--t-lg); color: var(--phos); margin-top: 2.4rem; }
+h3 { font-size: var(--t-md); color: var(--fg); }
+
+/* ── page title ─────────────────────────────────────────────────────── */
+
+/* The one place the character grid is allowed to break. Every page opened
+   with a title set at body size, which meant no page had a head — you
+   landed in the middle of a wall of 14px mono and had to read to find out
+   where you were.
+
+   The title is display type, but it is not exempt from the display it is
+   drawn on: the beam scans it too, at twice the pitch of the page raster,
+   so the glyphs are struck through with hard phosphor lines rather than
+   filled. Not a gradient — hard stops, flat ink, the tape-and-stamp rule
+   applied to type. */
+.titlebar {
+  max-width: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.2rem 2ch;
+  margin: 0 0 1.5rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--phos-dim);
 }
-h2 { font-size: 1.05rem; color: var(--phos); margin-top: 2.4rem; }
-h3 { font-size: 0.95rem; color: var(--fg); }
+
+.title {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--t-display);
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--phos);
+  overflow-wrap: anywhere;
+}
+
+/* Colour first, above, so a browser without background-clip: text still
+   gets a solid coral title rather than an invisible one. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .title {
+    color: transparent;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--phos) 0px,
+      var(--phos) 4px,
+      var(--phos-dim) 4px,
+      var(--phos-dim) 6px);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
+/* What the machine has to say about the page, held on the title's
+   baseline — count, classification, chapter. Ice, always. */
+.title-meta {
+  margin: 0;
+  color: var(--ice-dim);
+  font-size: var(--t-sm);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 
 p { margin: 0 0 1rem; }
 
@@ -358,12 +428,12 @@ hr {
    have got you here. Breadcrumbs are a web idiom; a terminal echoes. */
 .eyebrow {
   color: var(--fg-dim);
-  font-size: 0.8em;
+  font-size: var(--t-sm);
   letter-spacing: 0;
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.35rem;
   word-break: break-word;
 }
-.eyebrow .ps { color: var(--phos-dim); }
+.eyebrow .ps { color: var(--phos); }
 
 /* Section labels are solid blocks of phosphor with the ground knocked out
    of them — a stamp, not a caption. */
@@ -371,9 +441,9 @@ hr {
   display: inline-block;
   margin: 2.5rem 0 1rem;
   padding: 0.15rem 0.9rem;
-  background: var(--phos-dim);
+  background: var(--phos);
   color: var(--bg);
-  font-size: 0.76em;
+  font-size: var(--t-xs);
   font-weight: 700;
   letter-spacing: 0.24em;
 }
@@ -406,7 +476,7 @@ hr {
   grid-template-columns: max-content 1fr;
   gap: 0 1.5ch;
   margin: 0;
-  font-size: 0.88em;
+  font-size: var(--t-sm);
 }
 .fetch-info dt { color: var(--phos); }
 .fetch-info dt::after { content: ":"; color: var(--fg-faint); }
@@ -430,7 +500,7 @@ hr {
 .whisper {
   margin: 0 0 1.2rem;
   color: var(--ice-dim);
-  font-size: 0.85em;
+  font-size: var(--t-sm);
 }
 .whisper::before { content: "// "; color: var(--fg-faint); }
 
@@ -467,7 +537,7 @@ hr {
   justify-content: space-between;
   gap: 1ch;
   margin: -0.62em 1.2ch 0;
-  font-size: 0.76em;
+  font-size: var(--t-xs);
   line-height: 1.2;
 }
 
@@ -497,7 +567,7 @@ hr {
 .grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82em;
+  font-size: var(--t-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -521,7 +591,7 @@ hr {
 
 /* The record name is the hit target; the row lights up around it. */
 .grid .rec { color: var(--phos); text-decoration: none; font-weight: 700; }
-.grid tbody tr:hover td { background: var(--phos-dim); color: var(--bg); }
+.grid tbody tr:hover td { background: var(--phos); color: var(--bg); }
 .grid tbody tr:hover .rec,
 .grid tbody tr:hover .threat,
 .grid tbody tr:hover .threat .off { color: var(--bg); }
@@ -551,21 +621,6 @@ hr {
     transparent 16px);
 }
 .grid tbody tr:hover .redacted { color: var(--warn); }
-
-/* ── chips ──────────────────────────────────────────────────────────── */
-
-.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 1.4rem; padding: 0; list-style: none; }
-
-.chip {
-  padding: 0.1rem 0.6rem;
-  border: 1px solid var(--rule);
-  color: var(--fg-dim);
-  font-size: 0.74em;
-  letter-spacing: 0.12em;
-  white-space: nowrap;
-}
-.chip-hot   { color: var(--phos); border-color: var(--phos-dim); }
-.chip-warn  { color: var(--warn); border-color: var(--warn); }
 
 /* threat meter */
 .threat { color: var(--phos); letter-spacing: 0.2em; }
@@ -628,7 +683,7 @@ hr {
 .emblem figcaption {
   margin-top: 0.6rem;
   color: var(--fg-faint);
-  font-size: 0.72em;
+  font-size: var(--t-xs);
   letter-spacing: 0.18em;
 }
 
@@ -658,33 +713,126 @@ hr {
   background: var(--bg);
 }
 
-/* ── data list (mission / chapter / type) ───────────────────────────── */
+/* ── readout (mission / class / threat) ─────────────────────────────── */
 
+/* The dossier's facts, stated once each. This used to be a chip row and a
+   data list saying the same three things one above the other; density is
+   facts per line, not repetitions per screen. */
 .dl {
   display: grid;
   grid-template-columns: minmax(9ch, max-content) 1fr;
-  gap: 0.3rem 1.5ch;
+  gap: 0 1.5ch;
   margin: 0 0 1.8rem;
-  font-size: 0.9em;
+  font-size: var(--t-sm);
+  border-top: 1px solid var(--rule);
 }
-.dl dt { color: var(--ice-dim); letter-spacing: 0.12em; }
-.dl dd { margin: 0; color: var(--fg); }
+.dl dt {
+  padding: 0.22rem 0;
+  color: var(--ice-dim);
+  letter-spacing: 0.14em;
+  border-bottom: 1px solid var(--rule);
+}
+.dl dd {
+  margin: 0;
+  padding: 0.22rem 0;
+  color: var(--fg);
+  border-bottom: 1px solid var(--rule);
+}
 
 /* ── phase blocks ───────────────────────────────────────────────────── */
 
+/* A fight in order. The names already carry their own ordinals — the data
+   says "PHASE 2 — BELOW 50%" — so nothing here numbers them a second
+   time. What the rail encodes is that these are one continuous
+   engagement, not three separate notes. */
+.phases { margin: 0 0 1.8rem; }
+
 .phase {
-  border-left: 2px solid var(--phos-dim);
-  padding: 0.1rem 0 0.1rem 1.2rem;
-  margin: 0 0 1.5rem;
+  position: relative;
+  border-left: 1px solid var(--phos-dim);
+  padding: 0 0 0 1.6ch;
+  margin: 0 0 1.6rem;
 }
-.phase-name { color: var(--phos); letter-spacing: 0.1em; margin: 0 0 0.4rem; font-size: 0.95rem; }
+.phase:last-child { margin-bottom: 0; }
+
+/* Where the phase starts, marked on the rail. */
+.phase::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 1.1ch;
+  border-top: 1px solid var(--phos-dim);
+}
+
+.phase-name {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.1rem 0.8ch;
+  background: var(--phos);
+  color: var(--bg);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
 .phase p { margin: 0 0 0.5rem; }
-.phase .counter { color: var(--fg); }
+.phase p:last-child { margin-bottom: 0; }
+
+/* The answer to the phase, in the third voice — green is reserved for the
+   thing you are supposed to do. */
+.phase .counter {
+  padding-left: 1.4ch;
+  border-left: 2px solid var(--ok);
+  color: var(--fg);
+}
 .phase .counter::before {
   content: "COUNTER ";
   color: var(--ok);
-  letter-spacing: 0.12em;
-  font-size: 0.82em;
+  letter-spacing: 0.14em;
+  font-size: var(--t-xs);
+  font-weight: 700;
+}
+
+/* ── doctrine tenets ────────────────────────────────────────────────── */
+
+/* Six numbered articles, and the number is the point — it is a creed, and
+   a creed is cited by its article. The numeral sits in the margin at
+   display scale, the only other place on the site type leaves the grid. */
+/* Sized in the numeral's own ems, not the body's — "III" at display scale
+   is three times as wide as "I" and has to have somewhere to sit. */
+.tenet {
+  display: grid;
+  grid-template-columns: 4em 1fr;
+  gap: 0 2ch;
+  margin: 0 0 2.2rem;
+}
+
+.tenet-n {
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin: 0;
+  color: var(--phos);
+  font-size: 1.9em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tenet-head {
+  margin: 0 0 0.5rem;
+  color: var(--phos);
+  font-size: var(--t-lg);
+  letter-spacing: 0.06em;
+}
+
+.tenet p { margin: 0; max-width: var(--measure); }
+
+@media (max-width: 560px) {
+  .tenet { grid-template-columns: 1fr; gap: 0; }
+  .tenet-n { grid-row: auto; text-align: left; font-size: 1.4em; }
 }
 
 /* ── bullets ────────────────────────────────────────────────────────── */
@@ -731,7 +879,7 @@ hr {
   color: var(--warn);
   padding: 0.6rem 0.9rem;
   margin: 0 0 1.5rem;
-  font-size: 0.84em;
+  font-size: var(--t-sm);
   letter-spacing: 0.04em;
 }
 .notice-dim { border-color: var(--rule); color: var(--fg-faint); }
@@ -781,12 +929,12 @@ hr {
   background: var(--bg);
   border: 1px solid var(--warn);
   color: var(--warn);
-  font-size: 0.82em;
+  font-size: var(--t-sm);
   letter-spacing: 0.16em;
 }
 .decrypt-btn {
   font: inherit;
-  font-size: 0.82em;
+  font-size: var(--t-sm);
   letter-spacing: 0.16em;
   padding: 0.4rem 1.2rem;
   color: var(--warn);
@@ -837,14 +985,14 @@ hr {
 
 .console-title {
   color: var(--phos);
-  font-size: 0.76em;
+  font-size: var(--t-xs);
   letter-spacing: 0.18em;
   text-shadow: 0 0 10px var(--phos-glow);
 }
 
 .console-x {
   font: inherit;
-  font-size: 0.82em;
+  font-size: var(--t-sm);
   line-height: 1;
   padding: 0.25rem 0.5rem;
   color: var(--fg-faint);
@@ -871,7 +1019,7 @@ hr {
 .term-echo {
   margin: 0 0 0.5rem;
   color: var(--fg-dim);
-  font-size: 0.86em;
+  font-size: var(--t-sm);
   word-break: break-word;
 }
 .term-echo::before { content: "> "; color: var(--phos); }
@@ -880,7 +1028,7 @@ hr {
   margin-left: 0.35rem;
   padding: 0.28rem 0.85rem;
   font: inherit;
-  font-size: 0.78em;
+  font-size: var(--t-sm);
   letter-spacing: 0.12em;
   color: var(--fg-dim);
   background: transparent;
@@ -903,7 +1051,7 @@ hr {
 
 .ps1 {
   color: var(--phos);
-  font-size: 0.86em;
+  font-size: var(--t-sm);
   white-space: nowrap;
   letter-spacing: 0.04em;
 }
@@ -912,7 +1060,7 @@ hr {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 0.9em;
+  font-size: var(--t-sm);
   color: var(--fg);
   background: transparent;
   border: 0;
@@ -929,7 +1077,7 @@ hr {
   background: var(--bg-panel);
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 0.88em;
+  font-size: var(--t-sm);
   color: var(--fg-dim);
 }
 .term-out .t-cmd { color: var(--phos); }
@@ -972,7 +1120,7 @@ hr {
   gap: 0.6ch;
   padding: 0.22rem 0.5rem;
   font: inherit;
-  font-size: 0.72em;
+  font-size: var(--t-xs);
   letter-spacing: 0.14em;
   color: var(--fg-dim);
   background: var(--bg-panel);
@@ -981,7 +1129,7 @@ hr {
   cursor: pointer;
   white-space: nowrap;
 }
-.key:hover { color: var(--bg); background: var(--phos-dim); }
+.key:hover { color: var(--bg); background: var(--phos); }
 .key b { color: var(--phos); font-weight: 700; }
 .key:hover b { color: var(--bg); }
 
@@ -1024,7 +1172,7 @@ hr {
 
 .identity-toggle {
   font: inherit;
-  font-size: 0.78em;
+  font-size: var(--t-sm);
   letter-spacing: 0.2em;
   padding: 0;
   color: var(--ice-dim);
@@ -1053,7 +1201,7 @@ hr {
   margin-bottom: 1.4rem;
   color: var(--fg-dim);
   text-decoration: none;
-  font-size: 0.82em;
+  font-size: var(--t-sm);
   letter-spacing: 0.14em;
 }
 .back:hover { color: var(--phos); }
@@ -1091,7 +1239,7 @@ html { scrollbar-width: thin; scrollbar-color: var(--phos-dim) var(--bg-field); 
   .key b { display: none; }
   .key {
     flex: 1 1 30%;
-    font-size: 0.68em;
+    font-size: var(--t-xs);
     letter-spacing: 0.06em;
     padding: 0.5rem 0.3rem;
   }
@@ -1102,13 +1250,15 @@ html { scrollbar-width: thin; scrollbar-color: var(--phos-dim) var(--bg-field); 
   .crt { border-left: 0; border-right: 0; }
 
   .backdrop { opacity: 0.22; }
-  .titlecard { padding-top: 0.5rem; }
   .identity { letter-spacing: 0.14em; }
   .nav { gap: 0.3rem; }
   .spoiler-toggle { margin-left: 0; }
-  .row-meta { margin-left: 0; width: 100%; }
-  .dl { grid-template-columns: 1fr; gap: 0 0; }
-  .dl dt { margin-top: 0.6rem; }
+
+  /* The readout keeps its two columns down to the smallest screen — a
+     label above its own value is two lines saying what one line said, and
+     the labels are short enough to fit. */
+  .dl { grid-template-columns: minmax(7.5ch, max-content) 1fr; gap: 0 1ch; }
+  .titlebar { align-items: flex-start; }
 }
 
 /* ── reduced motion ─────────────────────────────────────────────────── */

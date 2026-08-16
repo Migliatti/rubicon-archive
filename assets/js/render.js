@@ -60,6 +60,16 @@ window.Render = (function () {
            esc(dir) + "$</span> " + esc(cmd) + "</p>";
   }
 
+  /* The page's head: the title at display scale, and what the machine has
+     to say about the page held on its baseline. Every view gets one, so
+     you never have to read a page to find out which page it is. */
+  function title(text, meta) {
+    return "<div class=\"titlebar\">" +
+             "<h1 class=\"title\">" + esc(text) + "</h1>" +
+             (meta ? "<p class=\"title-meta\">" + esc(meta) + "</p>" : "") +
+           "</div>";
+  }
+
   /* A framed panel with an inverse-video title bar. The unit of layout. */
   function panel(title, meta, body) {
     return "<section class=\"panel\">" +
@@ -234,7 +244,7 @@ window.Render = (function () {
 
     return "" +
       prompt("/rubicon3", "ls -l targets/") +
-      "<h1>TARGETS</h1>" +
+      title("TARGETS", bosses.length + " DOSSIERS // " + order.length + " CHAPTERS") +
       panel("BRIEF", bosses.length + " RECORDS",
         "<p class=\"lede\">Story-critical engagements, in the order Rubicon throws " +
         "them at you. Threat is scored on how hard the fight hits an unprepared " +
@@ -258,6 +268,7 @@ window.Render = (function () {
         (p.counter ? "<p class=\"counter\">" + esc(p.counter) + "</p>" : "") +
       "</div>";
     }).join("");
+    if (phases) phases = "<div class=\"phases\">" + phases + "</div>";
 
     var sources = (b.sources || []).length
       ? "<p class=\"rule-label\">SOURCES</p><ul class=\"bullets\">" +
@@ -269,30 +280,28 @@ window.Render = (function () {
 
     var body = "" +
       prompt("/rubicon3/targets", "cat " + b.id + ".dos") +
-      "<h1>" + esc(b.designation) + "</h1>" +
+      title(b.designation, "CH " + b.chapter + " // " + b.type) +
       (b.alias ? "<p class=\"lede\">" + esc(b.alias) + "</p>" : "") +
       (window.Portrait
         ? "<div class=\"visuals\">" + window.Portrait.markup(b) +
           window.Portrait.emblemMarkup(b) + "</div>"
         : "") +
 
-      "<ul class=\"chips\">" +
-        "<li class=\"chip chip-hot\">" + esc(b.type) + "</li>" +
-        "<li class=\"chip\">CH " + esc(b.chapter) + "</li>" +
-        "<li class=\"chip\">THREAT " + esc(b.threat) + "/5</li>" +
-        (b.verified === false
-          ? "<li class=\"chip chip-warn\">UNVERIFIED</li>" : "") +
-      "</ul>" +
-
       (b.verified === false
         ? "<p class=\"notice\">Parts of this dossier could not be corroborated across " +
           "two independent sources. Treat the specifics as field hearsay.</p>"
         : "") +
 
+      /* One line per fact, each fact stated once. The chip row that used to
+         sit above this repeated class, chapter and threat verbatim from the
+         rows below it. */
       "<dl class=\"dl\">" +
         "<dt>MISSION</dt><dd>" + esc(b.mission) + "</dd>" +
         "<dt>CLASS</dt><dd>" + esc(b.type) + "</dd>" +
-        "<dt>THREAT</dt><dd>" + threatMeter(b.threat) + "</dd>" +
+        "<dt>THREAT</dt><dd>" + threatMeter(b.threat) + " " +
+          esc(b.threat) + "/5</dd>" +
+        "<dt>SOURCING</dt><dd>" +
+          (b.verified === false ? "UNVERIFIED" : "CORROBORATED") + "</dd>" +
       "</dl>" +
 
       "<p>" + esc(b.summary) + "</p>" +
@@ -352,7 +361,7 @@ window.Render = (function () {
 
     return "" +
       prompt("/rubicon3", "ls -l archive/") +
-      "<h1>ARCHIVE</h1>" +
+      title("ARCHIVE", lore.length + " RECORDS // " + cats.length + " CLASSES") +
       panel("BRIEF", lore.length + " RECORDS",
         "<p class=\"lede\">What we could pull off the planet before the link " +
         "degraded. Entries marked RESTRICTED or REDACTED stay sealed until you " +
@@ -375,7 +384,7 @@ window.Render = (function () {
 
     var body = "" +
       prompt("/rubicon3/archive", "cat " + e.id + ".rec") +
-      "<h1>" + esc(e.title) + "</h1>" +
+      title(e.title, e.classification) +
       paras(e.body) +
       (e.quote
         ? "<div class=\"transmission\"><p>" + esc(e.quote.text) + "</p>" +
@@ -392,16 +401,19 @@ window.Render = (function () {
 
   function doctrine() {
     var d = creed.doctrine || { tenets: [] };
+    /* A creed is cited by its article, so the numeral is the record's
+       handle rather than decoration — it gets the margin and the scale. */
     var tenets = (d.tenets || []).map(function (t) {
-      return "<div class=\"phase\">" +
-        "<h3 class=\"phase-name\">" + esc(t.n) + ". " + esc(t.head) + "</h3>" +
+      return "<article class=\"tenet\">" +
+        "<p class=\"tenet-n\">" + esc(t.n) + "</p>" +
+        "<h2 class=\"tenet-head\">" + esc(t.head) + "</h2>" +
         "<p>" + esc(t.body) + "</p>" +
-      "</div>";
+      "</article>";
     }).join("");
 
     return "" +
       prompt("/rubicon3", "cat doctrine.txt") +
-      "<h1>" + esc(d.title || "DOCTRINE") + "</h1>" +
+      title(d.title || "DOCTRINE", (d.tenets || []).length + " ARTICLES") +
       "<p class=\"lede\">" + esc(d.lede || "") + "</p>" +
       tenets +
       (d.closing
@@ -415,7 +427,7 @@ window.Render = (function () {
   function notFound(msg) {
     return "" +
       prompt("/rubicon3", "cat ?") +
-      "<h1>404 // NO SUCH RECORD</h1>" +
+      title("NO SUCH RECORD", "404 // LINK DROPPED") +
       "<p class=\"lede\">" + esc(msg || "That path is not in the archive.") + "</p>" +
       "<div class=\"transmission\"><p>The link dropped. Whatever was here, " +
       "the corporations got to it first.</p><cite>ARCHIVE DAEMON</cite></div>" +
